@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Chatbox</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 0 16px; }
+        #messages { border: 1px solid #ccc; border-radius: 6px; padding: 12px; min-height: 200px; margin-bottom: 12px; overflow-y: auto; }
+        .msg { padding: 6px 0; border-bottom: 1px solid #eee; }
+        .msg:last-child { border-bottom: none; }
+        textarea { width: 100%; box-sizing: border-box; padding: 8px; font-size: 14px; border-radius: 4px; border: 1px solid #ccc; resize: vertical; }
+        button { margin-top: 8px; padding: 8px 20px; background: #0073bb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #005f99; }
+        .ts { font-size: 11px; color: #999; margin-left: 8px; }
+    </style>
+</head>
+<body>
+    <h2>💬 Chatbox</h2>
+    <div id="messages"></div>
+    <textarea id="input" rows="3" placeholder="Type a message..."></textarea>
+    <br>
+    <button onclick="sendMessage()">Submit</button>
+
+    <script>
+        async function loadMessages() {
+            const res = await fetch('/api/messages');
+            const msgs = await res.json();
+            const box = document.getElementById('messages');
+            box.innerHTML = msgs.length === 0 ? '<em>No messages yet.</em>' :
+                msgs.map(m => `<div class="msg">${escHtml(m.content)}<span class="ts">${new Date(m.createdAt).toLocaleString()}</span></div>`).join('');
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            const content = input.value.trim();
+            if (!content) return;
+            await fetch('/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content })
+            });
+            input.value = '';
+            loadMessages();
+        }
+
+        function escHtml(str) {
+            return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        document.getElementById('input').addEventListener('keydown', e => {
+            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+
+        loadMessages();
+    </script>
+</body>
+</html>
